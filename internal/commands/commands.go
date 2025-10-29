@@ -26,7 +26,8 @@ func InitializeCommands() *Commands {
 
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
-	cmds.register("reset", handlerResetUsers)
+	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsers)
 
 	return cmds
 }
@@ -92,12 +93,32 @@ func handlerRegister(state *state.State, cmd Command) error {
 	return nil
 }
 
-func handlerResetUsers(state *state.State, cmd Command) error {
+func handlerReset(state *state.State, cmd Command) error {
 	err := state.Db.ResetUsers(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to reset users: %v", err)
 	}
 
 	fmt.Println("All users have been reset successfully.")
+	return nil
+}
+
+func handlerUsers(state *state.State, cmd Command) error {
+	users, err := state.Db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get users: %v", err)
+	}
+
+	loggedUserName := state.Config.CurrentUserName
+
+	fmt.Println("Registered users:")
+	for _, user := range users {
+		if user == loggedUserName {
+			fmt.Println("*", user, "(current)")
+		} else {
+			fmt.Println("*", user)
+		}
+	}
+
 	return nil
 }
