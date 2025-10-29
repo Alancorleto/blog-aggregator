@@ -26,6 +26,7 @@ func InitializeCommands() *Commands {
 
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerResetUsers)
 
 	return cmds
 }
@@ -88,5 +89,15 @@ func handlerRegister(state *state.State, cmd Command) error {
 	}
 
 	fmt.Printf("User '%s' registered successfully.\n", userName)
+	return nil
+}
+
+func handlerResetUsers(state *state.State, cmd Command) error {
+	err := state.Db.ResetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to reset users: %v", err)
+	}
+
+	fmt.Println("All users have been reset successfully.")
 	return nil
 }
