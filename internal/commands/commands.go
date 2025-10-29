@@ -1,14 +1,14 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"time"
 
-	config "github.com/alancorleto/blog-aggregator/internal/config"
+	database "github.com/alancorleto/blog-aggregator/internal/database"
+	state "github.com/alancorleto/blog-aggregator/internal/state"
+	"github.com/google/uuid"
 )
-
-type State struct {
-	Config *config.Config
-}
 
 type Command struct {
 	Name      string
@@ -16,41 +16,77 @@ type Command struct {
 }
 
 type Commands struct {
-	CommandsMap map[string]func(*State, Command) error
+	CommandsMap map[string]func(*state.State, Command) error
 }
 
 func InitializeCommands() *Commands {
 	cmds := &Commands{
-		CommandsMap: make(map[string]func(*State, Command) error),
+		CommandsMap: make(map[string]func(*state.State, Command) error),
 	}
 
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	return cmds
 }
 
-func (c *Commands) Run(s *State, cmd Command) error {
+func (c *Commands) Run(s *state.State, cmd Command) error {
 	if handler, exists := c.CommandsMap[cmd.Name]; exists {
 		return handler(s, cmd)
 	}
 	return fmt.Errorf("unknown command: %s", cmd.Name)
 }
 
-func (c *Commands) register(name string, handler func(*State, Command) error) {
+func (c *Commands) register(name string, handler func(*state.State, Command) error) {
 	c.CommandsMap[name] = handler
 }
 
-func handlerLogin(state *State, cmd Command) error {
+func handlerLogin(state *state.State, cmd Command) error {
 	if len(cmd.Arguments) < 1 {
 		return fmt.Errorf("username argument is required for login command")
 	}
 
 	userName := cmd.Arguments[0]
+
+	if _, err := state.Db.GetUser(context.Background(), userName); err != nil {
+		return fmt.Errorf("user '%s' does not exist", userName)
+	}
+
 	err := state.Config.SetUser(userName)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("User '%s' logged in successfully.\n", userName)
+	return nil
+}
+
+func handlerRegister(state *state.State, cmd Command) error {
+	if len(cmd.Arguments) < 1 {
+		return fmt.Errorf("username argument is required for register command")
+	}
+
+	userName := cmd.Arguments[0]
+
+	if _, err := state.Db.GetUser(context.Background(), userName); err == nil {
+		return fmt.Errorf("user '%s' already exists", userName)
+	}
+
+	state.Db.CreateUser(
+		context.Background(),
+		database.CreateUserParams{
+			ID:        uuid.New(),
+			Name:      userName,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	)
+
+	err := state.Config.SetUser(userName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("User '%s' registered successfully.\n", userName)
 	return nil
 }
