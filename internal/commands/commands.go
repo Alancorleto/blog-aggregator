@@ -6,6 +6,7 @@ import (
 	"time"
 
 	database "github.com/alancorleto/blog-aggregator/internal/database"
+	feedfetcher "github.com/alancorleto/blog-aggregator/internal/feed_fetcher"
 	state "github.com/alancorleto/blog-aggregator/internal/state"
 	"github.com/google/uuid"
 )
@@ -28,6 +29,7 @@ func InitializeCommands() *Commands {
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
+	cmds.register("agg", handlerAgg)
 
 	return cmds
 }
@@ -119,6 +121,23 @@ func handlerUsers(state *state.State, cmd Command) error {
 			fmt.Println("*", user)
 		}
 	}
+
+	return nil
+}
+
+func handlerAgg(state *state.State, cmd Command) error {
+	// if len(cmd.Arguments) < 1 {
+	// 	return fmt.Errorf("feed URL argument is required for fetchfeed command")
+	// }
+
+	feedURL := "https://www.wagslane.dev/index.xml"
+
+	feed, err := feedfetcher.FetchFeed(context.Background(), feedURL)
+	if err != nil {
+		return fmt.Errorf("failed to fetch feed: %v", err)
+	}
+
+	fmt.Printf("%+v\n", feed)
 
 	return nil
 }
