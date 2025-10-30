@@ -30,6 +30,7 @@ func InitializeCommands() *Commands {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
 
 	return cmds
 }
@@ -101,7 +102,12 @@ func handlerReset(state *state.State, cmd Command) error {
 		return fmt.Errorf("failed to reset users: %v", err)
 	}
 
-	fmt.Println("All users have been reset successfully.")
+	err = state.Db.ResetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to reset feeds: %v", err)
+	}
+
+	fmt.Println("All databases have been reset successfully.")
 	return nil
 }
 
@@ -138,6 +144,40 @@ func handlerAgg(state *state.State, cmd Command) error {
 	}
 
 	fmt.Printf("%+v\n", feed)
+
+	return nil
+}
+
+func handlerAddFeed(state *state.State, cmd Command) error {
+	if len(cmd.Arguments) < 2 {
+		return fmt.Errorf("not enough arguments for add feed command, expected 2, got %d", len(cmd.Arguments))
+	}
+
+	currentUserName := state.Config.CurrentUserName
+	feedName := cmd.Arguments[0]
+	feedUrl := cmd.Arguments[1]
+
+	user, err := state.Db.GetUser(context.Background(), currentUserName)
+	if err != nil {
+		return err
+	}
+
+	feed, err := state.Db.CreateFeed(
+		context.Background(),
+		database.CreateFeedParams{
+			ID:        uuid.New(),
+			Name:      feedName,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Url:       feedUrl,
+			UserID:    user.ID,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%+v", feed)
 
 	return nil
 }
