@@ -34,6 +34,7 @@ func InitializeCommands() *Commands {
 	cmds.register("feeds", handlerFeeds)
 	cmds.register("follow", middleWareLoggedIn(handlerFollow))
 	cmds.register("following", middleWareLoggedIn(handlerFollowing))
+	cmds.register("unfollow", middleWareLoggedIn(handlerUnfollow))
 
 	return cmds
 }
@@ -261,6 +262,34 @@ func handlerFollowing(state *state.State, cmd Command, user database.User) error
 	for _, feedFollow := range feedFollows {
 		fmt.Printf("- %s\n", feedFollow.FeedName)
 	}
+
+	return nil
+}
+
+func handlerUnfollow(state *state.State, cmd Command, user database.User) error {
+	if len(cmd.Arguments) < 1 {
+		return fmt.Errorf("expected 1 argument, got 0")
+	}
+
+	feedUrl := cmd.Arguments[0]
+
+	feed, err := state.Db.GetFeedByURL(context.Background(), feedUrl)
+	if err != nil {
+		return err
+	}
+
+	err = state.Db.DeleteFeedFollow(
+		context.Background(),
+		database.DeleteFeedFollowParams{
+			UserID: user.ID,
+			FeedID: feed.ID,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s has unfollowed %s\n", user.Name, feed.Name)
 
 	return nil
 }
