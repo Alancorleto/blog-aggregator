@@ -31,6 +31,9 @@ func InitializeCommands() *Commands {
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerFeeds)
+	cmds.register("follow", handlerFollow)
+	cmds.register("following", handlerFollowing)
 
 	return cmds
 }
@@ -107,6 +110,11 @@ func handlerReset(state *state.State, cmd Command) error {
 		return fmt.Errorf("failed to reset feeds: %v", err)
 	}
 
+	err = state.Db.ResetFeedFollows(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to reset feed_follows: %v", err)
+	}
+
 	fmt.Println("All databases have been reset successfully.")
 	return nil
 }
@@ -153,10 +161,10 @@ func handlerAddFeed(state *state.State, cmd Command) error {
 		return fmt.Errorf("not enough arguments for add feed command, expected 2, got %d", len(cmd.Arguments))
 	}
 
-	currentUserName := state.Config.CurrentUserName
 	feedName := cmd.Arguments[0]
 	feedUrl := cmd.Arguments[1]
 
+	currentUserName := state.Config.CurrentUserName
 	user, err := state.Db.GetUser(context.Background(), currentUserName)
 	if err != nil {
 		return err
@@ -178,6 +186,88 @@ func handlerAddFeed(state *state.State, cmd Command) error {
 	}
 
 	fmt.Printf("%+v", feed)
+
+	followFeed(state, feed.Url)
+
+	return nil
+}
+
+func handlerFeeds(state *state.State, cmd Command) error {
+	feeds, err := state.Db.GetFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for _, feed := range feeds {
+		fmt.Printf("--- %s ---\nURL: %s\nUser: %s\n\n", feed.Name, feed.Url, feed.UserName)
+	}
+
+	return nil
+}
+
+func handlerFollow(state *state.State, cmd Command) error {
+	if len(cmd.Arguments) < 1 {
+		return fmt.Errorf("expected 1 argument, got 0")
+	}
+
+	feedUrl := cmd.Arguments[0]
+
+	feedFollowResponse, err := followFeed(state, feedUrl)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s is now following %s\n", feedFollowResponse.UserName, feedFollowResponse.FeedName)
+
+	return nil
+}
+
+func followFeed(state *state.State, feedUrl string) (database.CreateFeedFollowRow, error) {
+	currentUserName := state.Config.CurrentUserName
+	currentUser, err := state.Db.GetUser(context.Background(), currentUserName)
+	if err != nil {
+		return database.CreateFeedFollowRow{}, err
+	}
+
+	feed, err := state.Db.GetFeedByURL(context.Background(), feedUrl)
+	if err != nil {
+		return database.CreateFeedFollowRow{}, err
+	}
+
+	feedFollowResponse, err := state.Db.CreateFeedFollow(
+		context.Background(),
+		database.CreateFeedFollowParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			UserID:    currentUser.ID,
+			FeedID:    feed.ID,
+		},
+	)
+	if err != nil {
+		return database.CreateFeedFollowRow{}, err
+	}
+
+	return feedFollowResponse, nil
+}
+
+func handlerFollowing(state *state.State, cmd Command) error {
+	currentUserName := state.Config.CurrentUserName
+	currentUser, err := state.Db.GetUser(context.Background(), currentUserName)
+	if err != nil {
+		return err
+	}
+
+	feedFollows, err := state.Db.GetFeedFollowsForUser(context.Background(), currentUser.ID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Feeds followed by %s:\n", currentUserName)
+
+	for _, feedFollow := range feedFollows {
+		fmt.Printf("- %s\n", feedFollow.FeedName)
+	}
 
 	return nil
 }
