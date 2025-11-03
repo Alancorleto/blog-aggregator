@@ -165,11 +165,11 @@ func handlerAgg(state *state.State, cmd Command) error {
 
 	ticker := time.NewTicker(timeBetweenRequests)
 	for ; ; <-ticker.C {
-		err := feedscraper.ScrapeFeeds(state.Db)
+		nextFeedName, err := feedscraper.ScrapeNextFeed(state.Db)
 		if err != nil {
 			fmt.Printf("error scraping feed: %v\n", err)
 		} else {
-			fmt.Println("--- END OF FEED ---")
+			fmt.Printf("successfuly scraped posts from %s\n", nextFeedName)
 		}
 
 	}
