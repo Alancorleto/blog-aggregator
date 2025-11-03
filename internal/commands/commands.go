@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	database "github.com/alancorleto/blog-aggregator/internal/database"
@@ -35,6 +36,7 @@ func InitializeCommands() *Commands {
 	cmds.register("follow", middleWareLoggedIn(handlerFollow))
 	cmds.register("following", middleWareLoggedIn(handlerFollowing))
 	cmds.register("unfollow", middleWareLoggedIn(handlerUnfollow))
+	cmds.register("browse", middleWareLoggedIn(handlerBrowse))
 
 	return cmds
 }
@@ -297,6 +299,38 @@ func handlerUnfollow(state *state.State, cmd Command, user database.User) error 
 	}
 
 	fmt.Printf("%s has unfollowed %s\n", user.Name, feed.Name)
+
+	return nil
+}
+
+func handlerBrowse(state *state.State, cmd Command, user database.User) error {
+	limit := 2
+	if len(cmd.Arguments) >= 1 {
+		var err error
+		limit, err = strconv.Atoi(cmd.Arguments[0])
+		if err != nil {
+			return fmt.Errorf("invalid limit value: %v", err)
+		}
+	}
+
+	posts, err := state.Db.GetPostsForUser(
+		context.Background(),
+		database.GetPostsForUserParams{
+			UserID: user.ID,
+			Limit:  int32(limit),
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("error getting posts for user %s: %v", user.Name, err)
+	}
+
+	for _, post := range posts {
+		postDescription := ""
+		if post.Description.Valid {
+			postDescription = post.Description.String
+		}
+		fmt.Printf("%s\nPublish date: %v\n%s\nLink: %s\n\n", post.Title, post.PublishedAt, postDescription, post.Url)
+	}
 
 	return nil
 }
