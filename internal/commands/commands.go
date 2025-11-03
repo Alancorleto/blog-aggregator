@@ -6,7 +6,7 @@ import (
 	"time"
 
 	database "github.com/alancorleto/blog-aggregator/internal/database"
-	feedfetcher "github.com/alancorleto/blog-aggregator/internal/feed_fetcher"
+	feedscraper "github.com/alancorleto/blog-aggregator/internal/feed_scraper"
 	state "github.com/alancorleto/blog-aggregator/internal/state"
 	"github.com/google/uuid"
 )
@@ -152,20 +152,27 @@ func handlerUsers(state *state.State, cmd Command) error {
 }
 
 func handlerAgg(state *state.State, cmd Command) error {
-	// if len(cmd.Arguments) < 1 {
-	// 	return fmt.Errorf("feed URL argument is required for fetchfeed command")
-	// }
-
-	feedURL := "https://www.wagslane.dev/index.xml"
-
-	feed, err := feedfetcher.FetchFeed(context.Background(), feedURL)
-	if err != nil {
-		return fmt.Errorf("failed to fetch feed: %v", err)
+	timeBetweenRequests := 1 * time.Minute
+	if len(cmd.Arguments) >= 1 {
+		timeArgument, err := time.ParseDuration(cmd.Arguments[0])
+		if err != nil {
+			return fmt.Errorf("error parsing first argument (time between requests): %v", err)
+		}
+		timeBetweenRequests = timeArgument
 	}
 
-	fmt.Printf("%+v\n", feed)
+	fmt.Printf("--- Collecting feeds avery %v ---\n", timeBetweenRequests)
 
-	return nil
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		err := feedscraper.ScrapeFeeds(state.Db)
+		if err != nil {
+			fmt.Printf("error scraping feed: %v\n", err)
+		} else {
+			fmt.Println("--- END OF FEED ---")
+		}
+
+	}
 }
 
 func handlerAddFeed(state *state.State, cmd Command, user database.User) error {
