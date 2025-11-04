@@ -1,4 +1,4 @@
-module github.com/alancorleto/blog-aggregator
+module github.com/alancorleto/gator
 
 go 1.25.2
 

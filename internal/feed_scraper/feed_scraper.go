@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	database "github.com/alancorleto/blog-aggregator/internal/database"
-	feedfetcher "github.com/alancorleto/blog-aggregator/internal/feed_fetcher"
+	database "github.com/alancorleto/gator/internal/database"
+	feedfetcher "github.com/alancorleto/gator/internal/feed_fetcher"
 	"github.com/google/uuid"
 )
 

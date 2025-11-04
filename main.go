@@ -7,10 +7,10 @@ import (
 
 	_ "github.com/lib/pq"
 
-	commands "github.com/alancorleto/blog-aggregator/internal/commands"
-	config "github.com/alancorleto/blog-aggregator/internal/config"
-	database "github.com/alancorleto/blog-aggregator/internal/database"
-	state "github.com/alancorleto/blog-aggregator/internal/state"
+	commands "github.com/alancorleto/gator/internal/commands"
+	config "github.com/alancorleto/gator/internal/config"
+	database "github.com/alancorleto/gator/internal/database"
+	state "github.com/alancorleto/gator/internal/state"
 )
 
 func main() {

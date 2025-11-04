@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	database "github.com/alancorleto/blog-aggregator/internal/database"
-	feedscraper "github.com/alancorleto/blog-aggregator/internal/feed_scraper"
-	state "github.com/alancorleto/blog-aggregator/internal/state"
+	database "github.com/alancorleto/gator/internal/database"
+	feedscraper "github.com/alancorleto/gator/internal/feed_scraper"
+	state "github.com/alancorleto/gator/internal/state"
 	"github.com/google/uuid"
 )
 

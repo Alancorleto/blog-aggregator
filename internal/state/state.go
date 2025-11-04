@@ -1,8 +1,8 @@
 package state
 
 import (
-	config "github.com/alancorleto/blog-aggregator/internal/config"
-	database "github.com/alancorleto/blog-aggregator/internal/database"
+	config "github.com/alancorleto/gator/internal/config"
+	database "github.com/alancorleto/gator/internal/database"
 )
 
 type State struct {
