@@ -4,7 +4,7 @@ Gator is a CLI tool made in Go to aggregate blog RSS feeds.
 
 # Install requirements
 
-- Postgres v1.15+
+- Postgres v15+
 - Go
 
 # How to install
